@@ -160,7 +160,13 @@ export class App extends gfx.GfxApp
         const ray = new gfx.Ray3();
         ray.setPickRay(deviceCoords, this.camera);
 
-        const intersection = ray.intersectsMesh3(this.pickMesh);
+        let intersection: gfx.Vector3 | null;
+        if(this.raycastMode == 'Box')
+            intersection = ray.intersectsOrientedBoundingBox(this.pickMesh);
+        else if(this.raycastMode == 'Sphere')
+            intersection = ray.intersectsOrientedBoundingSphere(this.pickMesh);
+        else
+            intersection = ray.intersectsMesh3(this.pickMesh);
 
         if(intersection)
         {
@@ -178,6 +184,29 @@ export class App extends gfx.GfxApp
             
             this.pickRayMarker.visible = true;
             this.pickRayLine.visible = true;
+
+            // exit the event handler to skip further intersection tests
+            return;
+        }
+
+        const groundPlane = new gfx.Plane3(gfx.Vector3.ZERO, gfx.Vector3.UP);
+        const groundIntersection = ray.intersectsPlane(groundPlane);
+        if(groundIntersection)
+        {
+
+            const pickRayLineOrigin = this.camera.position.clone();
+            pickRayLineOrigin.y -= 0.05;
+
+            const groundDistance = pickRayLineOrigin.distanceTo(groundIntersection);
+            const S = gfx.Matrix4.makeScale(new gfx.Vector3(0.005, 0.005, groundDistance));
+            const R = gfx.Matrix4.lookAt(pickRayLineOrigin, groundIntersection, gfx.Vector3.UP);
+            const T = gfx.Matrix4.makeTranslation(new gfx.Vector3(0, 0, -groundDistance/2));
+            const M = gfx.Matrix4.multiplyAll(R, T, S);
+            this.pickRayLine.setLocalToParentMatrix(M, false);
+
+            this.pickRayLine.visible = true;
+            this.pickRayMarker.visible = true;
+            this.pickRayMarker.position.copy(groundIntersection);
 
             // exit the event handler to skip further intersection tests
             return;
