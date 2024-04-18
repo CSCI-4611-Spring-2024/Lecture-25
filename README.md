@@ -1,4 +1,4 @@
-# Lecture 25: Programming with 3D Rays
+# Lecture 25: Programming with Pick Rays
 
 The latest commit will be the finished code at the end of class.  If you are intending to implement this program while watching the lecture video, you should checkout the commit labeled `pre-class commit`  to get the starter code.
 
