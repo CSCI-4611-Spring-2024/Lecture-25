@@ -33,7 +33,7 @@ export class App extends gfx.GfxApp
         this.boundsMesh = this.pickMesh.createInstance();
         this.boundsMaterial = new gfx.BoundingVolumeMaterial();
 
-        this.pickRayLine = gfx.Geometry3Factory.createBox(0.005, 0.005, 1);
+        this.pickRayLine = gfx.Geometry3Factory.createBox(1, 1, 1);
         this.pickRayMarker = gfx.Geometry3Factory.createSphere(0.02, 2);
 
         this.boundingVolumeMode = 'None';
@@ -146,5 +146,45 @@ export class App extends gfx.GfxApp
     update(deltaTime: number): void 
     {
         this.cameraControls.update(deltaTime);
+    }
+
+
+    onMouseDown(event: MouseEvent): void 
+    {
+        // Exit the event handler if we did not click the left mouse button
+        if(event.button != 0)
+            return;
+
+        const deviceCoords = this.getNormalizedDeviceCoordinates(event.x, event.y);
+
+        const ray = new gfx.Ray3();
+        ray.setPickRay(deviceCoords, this.camera);
+
+        const intersection = ray.intersectsMesh3(this.pickMesh);
+
+        if(intersection)
+        {
+            this.pickRayMarker.position.copy(intersection);
+
+            const pickRayLineOrigin = this.camera.position.clone();
+            pickRayLineOrigin.y -= 0.05;
+            const distance = pickRayLineOrigin.distanceTo(intersection);
+
+            const S = gfx.Matrix4.makeScale(new gfx.Vector3(0.005, 0.005, distance));
+            const R = gfx.Matrix4.lookAt(pickRayLineOrigin, intersection, gfx.Vector3.UP);
+            const T = gfx.Matrix4.makeTranslation(new gfx.Vector3(0, 0, -distance/2));
+            const M = gfx.Matrix4.multiplyAll(R, T, S);
+            this.pickRayLine.setLocalToParentMatrix(M, false);
+            
+            this.pickRayMarker.visible = true;
+            this.pickRayLine.visible = true;
+
+            // exit the event handler to skip further intersection tests
+            return;
+        }
+
+        // if we did not find an intersection, set the line and marker to invisible
+        this.pickRayLine.visible = false;
+        this.pickRayMarker.visible = false;
     }
 }
