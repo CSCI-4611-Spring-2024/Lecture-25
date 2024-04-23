@@ -19,6 +19,8 @@ export class App extends gfx.GfxApp
     private boundsMesh: gfx.Mesh3;
     private boundsMaterial: gfx.BoundingVolumeMaterial;
 
+    private gazeMarker: gfx.Mesh3;
+
 
     // --- Create the App class ---
     constructor()
@@ -35,6 +37,8 @@ export class App extends gfx.GfxApp
 
         this.pickRayLine = gfx.Geometry3Factory.createBox(1, 1, 1);
         this.pickRayMarker = gfx.Geometry3Factory.createSphere(0.02, 2);
+
+        this.gazeMarker = this.pickRayMarker.createInstance();
 
         this.boundingVolumeMode = 'None';
         this.raycastMode = 'Box';
@@ -100,6 +104,11 @@ export class App extends gfx.GfxApp
         this.pickRayMarker.visible = false;
         this.scene.add(this.pickRayMarker);
 
+        this.gazeMarker.material = new gfx.PhongMaterial();
+        this.gazeMarker.material.setColor(new gfx.Color(0, 0, 1));
+        this.gazeMarker.visible = false;
+        this.scene.add(this.gazeMarker);
+
         this.createGUI();
     }
 
@@ -146,6 +155,27 @@ export class App extends gfx.GfxApp
     update(deltaTime: number): void 
     {
         this.cameraControls.update(deltaTime);
+
+        const ray = new gfx.Ray3();
+        ray.set(this.camera.position, this.camera.rotation.rotate(gfx.Vector3.FORWARD));
+
+        let intersection: gfx.Vector3 | null;
+        if(this.raycastMode == 'Box')
+            intersection = ray.intersectsOrientedBoundingBox(this.pickMesh);
+        else if(this.raycastMode == 'Sphere')
+            intersection = ray.intersectsOrientedBoundingSphere(this.pickMesh);
+        else
+            intersection = ray.intersectsMesh3(this.pickMesh);
+
+        if(intersection)
+        {
+            this.gazeMarker.visible = true;
+            this.gazeMarker.position.copy(intersection);
+        }
+        else
+        {
+            this.gazeMarker.visible = false;
+        }
     }
 
 
